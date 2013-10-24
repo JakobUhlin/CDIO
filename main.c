@@ -47,15 +47,15 @@ void main(void)
 {
 
 	WDTCTL = WDTPW + WDTHOLD;
+
 	clockSetup();
 	initUART();
-	//__enable_interrupt();
+	__enable_interrupt();
 	initLCD();
 	initGSM();
 
 //  UserExperience();
 }
-
 
 #pragma vector=USCI_A0_VECTOR
 __interrupt void USCI_A0_ISR(void)

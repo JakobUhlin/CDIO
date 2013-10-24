@@ -11,6 +11,7 @@
 #define UART_TX_BUF_LEN 128
 #define UART_RX_BUF_LEN 256
 
+extern char uartRxBuf[UART_RX_BUF_LEN];
 //char checksum[10];
 
 

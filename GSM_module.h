@@ -17,6 +17,10 @@ void sendATCommand(int length, const unsigned char *command);
 //Send stop bit to GSM module, to end task
 void sendCTRL_Z(void);
 
+void return_size(int l);
+
+void dosomethingdummy();
+void compare_easy(char *AT_Respons, const char *want_respons);
 
 
 #endif /* GSM_MODULE_H_ */

@@ -9,8 +9,8 @@
 #include "UART.h"
 #include <string.h>
 
-char uartRxBuf[UART_RX_BUF_LEN];
 int uartStart = 0;
+char uartRxBuf[UART_RX_BUF_LEN];
 
 #include "GSM_module.h"
 
@@ -34,7 +34,7 @@ void initUART(void) {
    // UCA1STAT|=UCLISTEN;						//Internal feedback TX to RX
     UCA0MCTL|=UCBRS_6; 						//Set modulation control register to 0x04 and =8mhz 9600bds
     UCA0CTL1 &= ~UCSWRST;
-    uart_enable();
+   // uart_enable();
 }
 
 
@@ -45,14 +45,14 @@ void Delay(void)
 }
 void uart_enable(void)
 {
-	UCA0IE |= (UCTXIE|UCRXIE);
+	UCA0IE |= UCRXIE;
 }
 
 
 // Disable Tx/Rx interrupts
 void uart_disable(void)
 {
-  UCA1IE &= ~(UCTXIE|UCRXIE);
+  UCA1IE &= ~UCRXIE;
 }
 
 
@@ -65,8 +65,10 @@ void uart_send(int len, char vec)
 
 
 // Read Everything from RX that service routine says it to do. TEST!
+int apa=0;
 void uart_read(char a)
 {
+	apa++;
 	uartRxBuf[uartStart++]=a;
 }
 
