@@ -1,8 +1,8 @@
 /*
- * GSM_module.c
+ * 	GSM_module.c
  *
- *  Created on: Oct 9, 2013
- *      Author: Administrator
+ *  Created on: Oct 17, 2013
+ *  Author: Amanda
  */
 
 
@@ -10,78 +10,177 @@
 #include <msp430.h>
 #include "GSM_module.h"
 #include "UART.h"
-#include "LCD.h"
 #include <stdlib.h>
 #include <string.h>
 
 
+#define SIZECommand 	6
+#define SIZEResponse 	2
+int initCount=0;
+
 ///////////////////////////////////////////////////////////////
 /* AT Commands setup definitions*/
-const unsigned char AT_Test[]		 = "AT\r";
-const unsigned char AT_ConfSMS[] 	 = "AT+CMGF=1\r";
-const unsigned char AT_ConfJakob[] 	 = "AT+CMGS=\"+46736525723\"\r";
+
+const char ATtest[] = "AT\r";
+const char ATecho[] = "ATE0\r";
+const char ATtextMode[] = "AT+CMGF=1\r";
+const char ATsetPhoneNumber[] = "AT+CMGS=\"+46736525723\"\r";
+const char ATsetSmsStorage[] = "AT+CPMS=\"SM\"\r";
+const char ATreadUnreadSms[] = "AT+CMGL=\"REC UNREAD\"\r";
+const char ATdeleteAllSms[] = "AT+CMGDA=\"DEL ALL\"\r";
+
 
 ///////////////////////////////////////////////////////////////
-/*AT Commands responses*/
-const char AT_Testresp[]	= "AT\r \rOK\r\0";//'A'+'T'+0x2E+'\r'+'O'+'K'+'\r'; It creates AT...OK..
-const char AT_SMSresp[];
+/*AT Responses setup definitions*/
+
+const char ATResponseOK[] = "OK\r\n";
 
 ///////////////////////////////////////////////////////////////
-// Sending the AT+Respons, that is the received response, want_respons is the
-//wanted response..
-void Compare_easy(char *AT_Respons, const char *want_respons)
-{
-	char *array= (char*)malloc(strlen(want_respons)+1);
-	strcpy(array,AT_Respons);
-	while(strcmp(array,want_respons));
-}
-
-
 // Initiating the GSM module
 void initGSM(void)
 {
-	sendATCommand(strlen(AT_Test),AT_Test);
-	uart_enable();
-	dosomethingdummy();
-	//while(!(UCA0IFG & UCRXIFG));
-	Compare_easy(uartRxBuf, AT_Testresp);
-	//sendATCommand(strlen(AT_ConfSMS),AT_ConfSMS);
-	//sendATCommand(strlen(AT_ConfJakob),AT_ConfJakob); //GET EEPROM FUnction to be created!
-	//Delay();
-	uart_disable(); // DEBUGGA HIT, isafall fungerar var while sats och compare ar true.
 
+	pwrOn();
+
+	//Test command
+	sendATCommand(strlen(ATtest), ATtest);
+	Delay();
+
+	//Echo mode off
+	sendATCommand(strlen(ATecho), ATecho);
+	uartEnable();
+
+    while(id < strlen(ATResponseOK));
+
+    uartRxBuf[uartStart] = '\0';
+    uartDisable();
+    uartStart = 0;
+    id = 0;
+
+    //Check if OK
+    if((compareEasy(uartRxBuf, ATResponseOK)) == 1)
+    {
+    	sendATCommand(strlen(ATtextMode), ATtextMode);
+    	uartEnable();
+
+    	while(id < strlen(ATResponseOK));
+
+    	uartRxBuf[uartStart] = '\0';
+    	uartDisable();
+    	uartStart = 0;
+    	id = 0;
+    }
+}
+
+// Sending the AT response, that is the received response, wantedResponse is the
+//wanted response..
+int compareEasy(char *response, const char *wantedResponse)
+{
+	if(!(strcmp(response, wantedResponse)))
+		return 1;
+	else
+		return -1;
 }
 
 
 // Sends AT command to Tx buffer
-void sendATCommand(int length, const unsigned char* command)
+void sendATCommand(int length, const char *command)
 {
 	char com;
-	while((length) > 0 )
-	{
-		length--;
-		com=*(command++);
-		uart_send(length, com);
-	}
+    while(length > 0 )
+    {
+    	length--;
+
+        com = *(command++);
+        uartSend(length, com);
+    }
 }
 
-//Use this to end your message to the GSM module
-void sendCTRL_Z(void)
+//Use this to end your SMS
+void sendCtrlZ(void)
 {
-	while(!(UCA0IFG & UCTXIFG));
-	UCA0TXBUF=26;			// ASCII number for Ctrl+Z
+	while(!(UCA1IFG & UCTXIFG));		//TX buffer ready?
+    UCA1TXBUF=26;                       //ASCII number for Ctrl+Z
 }
 
-//Temporary function to get the shit done. The program has enough time to get
-//..the response from the UCA0RXBUF
-void dosomethingdummy()
+//Read the unread SMS
+void readSMS()
 {
-	int i;
-	int d=5000;
-	for (i=0;i<3000;i++ )
+    sendATCommand(strlen(ATsetSmsStorage), ATsetSmsStorage);
+	uartEnable();
+
+	while(id < strlen(ATResponseOK));
+
+	uartRxBuf[uartStart] = '\0';
+	uartDisable();
+	uartStart = 0;
+	id = 0;
+
+
+    sendATCommand(strlen(ATreadUnreadSms), ATreadUnreadSms);
+	uartEnable();
+
+	while(id < strlen(ATResponseOK));
+
+	uartRxBuf[uartStart] = '\0';
+	uartDisable();
+	uartStart = 0;
+	id = 0;
+
+    sendATCommand(strlen(ATsetPhoneNumber), ATsetPhoneNumber);//Send the telephone number to SIM900
+    Delay();
+
+	int startSMS = searchForSMS(uartRxBuf);
+	while(startSMS < strlen(uartRxBuf))
 	{
-		d--;
+		uartSend(startSMS, uartRxBuf[startSMS]);
+		startSMS++;
+
+		if(uartRxBuf[startSMS] == '\r')
+			if(uartRxBuf[startSMS++]=='\n')
+				startSMS = strlen(uartRxBuf);
 	}
-	//while(strcmp(uartRxBuf,AT_Testresp)); //// Skriv en funktion har som hamtar in vardet den bor se, beroende pa vad som skickats
+
+	sendCtrlZ();
 }
 
+//Search for the start of the SMS
+int searchForSMS(char *message)
+{
+	int i = 0;
+
+	while(i < strlen(message))
+		if(message[i] == '\r')
+			if(message[i++]=='\n')
+			return i;
+}
+
+//The program has enough time to get the
+//response from the UCA0RXBUF
+void doSomethingDummy()
+{
+    int i;
+    int d = 5000;
+    for (i = 0; i < 3000; i++ )
+    {
+    	d--;
+    }
+}
+
+void pwrOn(void)
+{
+	initCount=1;
+	P4DIR |= BIT2;
+
+	//if(!(P4OUT & BIT2))
+	//{
+		P4OUT &= ~BIT2;
+		int i = 0;
+
+		while(i < 100)
+		{
+			Delay();
+			i++;
+		}
+	//}
+}
