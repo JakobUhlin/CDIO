@@ -1,26 +1,32 @@
 /*
- * GSM_module.h
+ * 	GSM_module.h
  *
- *  Created on: Oct 9, 2013
- *      Author: Administrator
+ *  Created on: Oct 17, 2013
+ *  Author: Amanda
  */
 
 #ifndef GSM_MODULE_H_
 #define GSM_MODULE_H_
 
+extern const char ATResponseOK[];
 // Initiating the GSM module
 void initGSM(void);
 
 // Sends AT command to Tx buffer
-void sendATCommand(int length, const unsigned char *command);
+void sendATCommand(int length, const char *command);
 
 //Send stop bit to GSM module, to end task
-void sendCTRL_Z(void);
+void sendCtrlZ(void);
 
-void return_size(int l);
+//Compare response from GSM to wanted response
+int compareEasy(char *response, const char *wantedResponse);
 
-void dosomethingdummy();
-void compare_easy(char *AT_Respons, const char *want_respons);
+void readSMS();
 
+int searchForSMS(char *message);
+
+void doSomethingDummy();
+
+void pwrOn(void);
 
 #endif /* GSM_MODULE_H_ */
