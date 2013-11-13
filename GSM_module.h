@@ -28,5 +28,7 @@ int searchForSMS(char *message);
 void doSomethingDummy();
 
 void pwrOn(void);
+void checkAT();
+void whatIsTheMessage();
 
 #endif /* GSM_MODULE_H_ */

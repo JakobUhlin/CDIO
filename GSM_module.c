@@ -36,11 +36,21 @@ const char ATdeleteAllSms[] = "AT+CMGDA=\"DEL ALL\"\r";
 const char ATResponseOK[] = "OK\r\n";
 
 ///////////////////////////////////////////////////////////////
+
+char stopAlarm[2];
+char statusReq[6];
+char newNumber[19];
+char newTolerance[16];
+
+char stopAlarmResp[]="OK";
+char statusReqResp[]="STATUS";
+char newNumberResp[]="New nr:";
+char newToleranceResp[]="New tolerance:";
 // Initiating the GSM module
 void initGSM(void)
 {
 
-	pwrOn();
+	//pwrOn();
 
 	//Test command
 	sendATCommand(strlen(ATtest), ATtest);
@@ -109,39 +119,17 @@ void readSMS()
     sendATCommand(strlen(ATsetSmsStorage), ATsetSmsStorage);
 	uartEnable();
 
-	while(id < strlen(ATResponseOK));
-
-	uartRxBuf[uartStart] = '\0';
-	uartDisable();
-	uartStart = 0;
-	id = 0;
-
+	checkAT();		//Checks the response from GPRS and disables interrupt
 
     sendATCommand(strlen(ATreadUnreadSms), ATreadUnreadSms);
 	uartEnable();
 
-	while(id < strlen(ATResponseOK));
-
-	uartRxBuf[uartStart] = '\0';
-	uartDisable();
-	uartStart = 0;
-	id = 0;
+	checkAT();
 
     sendATCommand(strlen(ATsetPhoneNumber), ATsetPhoneNumber);//Send the telephone number to SIM900
     Delay();
 
-	int startSMS = searchForSMS(uartRxBuf);
-	while(startSMS < strlen(uartRxBuf))
-	{
-		uartSend(startSMS, uartRxBuf[startSMS]);
-		startSMS++;
-
-		if(uartRxBuf[startSMS] == '\r')
-			if(uartRxBuf[startSMS++]=='\n')
-				startSMS = strlen(uartRxBuf);
-	}
-
-	sendCtrlZ();
+	whatIsTheMessage();
 }
 
 //Search for the start of the SMS
@@ -150,21 +138,8 @@ int searchForSMS(char *message)
 	int i = 0;
 
 	while(i < strlen(message))
-		if(message[i] == '\r')
-			if(message[i++]=='\n')
+		if(message[i++] == '#')
 			return i;
-}
-
-//The program has enough time to get the
-//response from the UCA0RXBUF
-void doSomethingDummy()
-{
-    int i;
-    int d = 5000;
-    for (i = 0; i < 3000; i++ )
-    {
-    	d--;
-    }
 }
 
 void pwrOn(void)
@@ -183,4 +158,90 @@ void pwrOn(void)
 			i++;
 		}
 	//}
+}
+
+void checkAT()
+{
+	while(id < strlen(ATResponseOK));
+
+		uartRxBuf[uartStart] = '\0';
+		uartDisable();
+		uartStart = 0;
+		id = 0;
+}
+
+void whatIsTheMessage()
+{
+	int startSMS = searchForSMS(uartRxBuf);
+	int d=startSMS;
+	int diff=0;
+	while(startSMS < strlen(uartRxBuf))
+	{
+		startSMS++;
+		if(uartRxBuf[startSMS] == '#')
+		{
+			diff=startSMS-d;
+			startSMS = strlen(uartRxBuf);
+		}
+	}
+	//Save the value....
+	int startSMS2=searchForSMS(uartRxBuf);
+	int i=0;
+	switch(diff) {
+		    case 2:
+		    	while(startSMS2 < strlen(uartRxBuf))
+		    			{
+		    				stopAlarm[i]=uartRxBuf[startSMS2];
+		    				startSMS2++;
+		    				i++;
+		    				if(uartRxBuf[startSMS] == '#')
+		    					startSMS2 = strlen(uartRxBuf);
+		    			}
+		    	i=0;
+		    	if (!strcmp(stopAlarm,"OK"))
+		    	{
+		    		break;
+		    	}
+		    	//OKflag x=0;
+		    	//alarmflag=pr;
+		    	break;             //  Stop alarm
+		    case 6:                   //Status requested, all info shall be send in uartsend
+		    	while(startSMS2 < strlen(uartRxBuf))
+		    			{
+		    				statusReq[i]=(uartRxBuf[startSMS2]);
+		   		    		startSMS2++;
+		   		    		i++;
+	  			    		if(uartRxBuf[startSMS] == '#')
+		    			    	startSMS2 = strlen(uartRxBuf);
+		    			}
+		    	i=0;
+		    	if (!strcmp(statusReq,statusReqResp))
+		    	{
+		    		break;
+		    	}
+		    	//
+		    	//Go get data, then uartSend
+		        break;
+		    case 16:			//New tolerance level.
+		    	while(startSMS2 < strlen(uartRxBuf))
+		    			{
+		    				newTolerance[startSMS2]=(uartRxBuf[startSMS2]);
+		    				startSMS2++;
+		    				if(uartRxBuf[startSMS] == '#')
+		    					startSMS2 = strlen(uartRxBuf);
+		    			}
+
+		    	break;
+		    case 19:			//New number to FLASH.
+		    	while(startSMS2 < strlen(uartRxBuf))
+		    			{
+		    				newNumber[startSMS2]=(uartRxBuf[startSMS2]);
+		    				startSMS2++;
+		    				if(uartRxBuf[startSMS] == '#')
+		    					startSMS2 = strlen(uartRxBuf);
+		    			}
+		        break;
+		    default: break;
+		    }
+
 }
