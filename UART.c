@@ -2,7 +2,7 @@
  * UART.c
  *
  *  Created on: Oct 17, 2013
- *  Author: Amanda
+ *  Author: Jakob Uhlin
  */
 
 #include <msp430.h>

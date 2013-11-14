@@ -2,7 +2,7 @@
  * 	GSM_module.c
  *
  *  Created on: Oct 17, 2013
- *  Author: Amanda
+ *  Author: Jakob Uhlin
  */
 
 

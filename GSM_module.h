@@ -2,7 +2,7 @@
  * 	GSM_module.h
  *
  *  Created on: Oct 17, 2013
- *  Author: Amanda
+ *  Author: Jakob Uhlin
  */
 
 #ifndef GSM_MODULE_H_

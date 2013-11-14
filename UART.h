@@ -2,7 +2,7 @@
  * UART.h
  *
  *  Created on: Oct 17, 2013
- *  Author: Amanda
+ *  Author: Jakob Uhlin
  */
 
 #ifndef UART_H_
